@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Đấu Trường Cờ Vua 60s - Min Master</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      background: #1e1e24;
+      color: #f7fff7;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 10px;
+    }
+    header {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #2b2d42;
+      padding: 10px 16px;
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .badge-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #48cae4;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .scoreboard {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .stat-pill {
+      background: #11131f;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: bold;
+    }
+    .timer { color: #ff4d6d; }
+    .score { color: #ffe66d; }
+
+    /* Mission Box */
+    .mission-banner {
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      margin: 8px 0;
+    }
+    .mission-banner span {
+      color: #48cae4;
+      font-weight: bold;
+    }
+
+    /* Chessboard Container */
+    .board-container {
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1 / 1;
+      background: #4a5568;
+      border: 4px solid #2b2d42;
+      border-radius: 8px;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      position: relative;
+    }
+    .square {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: clamp(2rem, 8vw, 2.7rem);
+      cursor: pointer;
+      position: relative;
+    }
+    .square.light { background-color: #ebecd0; color: #333; }
+    .square.dark { background-color: #779556; color: #111; }
+    .square.selected {
+      background-color: #baca44 !important;
+    }
+    .square.hint::after {
+      content: '';
+      position: absolute;
+      width: 24%;
+      height: 24%;
+      background: rgba(20, 85, 0, 0.5);
+      border-radius: 50%;
+    }
+    .square.last-move {
+      background-color: rgba(246, 246, 105, 0.6) !important;
+    }
+
+    /* Modal End Game */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal-card {
+      background: #2b2d42;
+      border: 2px solid #48cae4;
+      border-radius: 20px;
+      padding: 24px 20px;
+      width: 90%;
+      max-width: 340px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+    }
+    .modal-card h2 {
+      font-size: 1.5rem;
+      color: #ffe66d;
+      margin-bottom: 10px;
+    }
+    .modal-card p {
+      font-size: 1rem;
+      margin-bottom: 16px;
+      color: #edf2f4;
+    }
+    .rank-tag {
+      display: inline-block;
+      background: #ff4d6d;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      font-size: 1.1rem;
+    }
+    .btn-action {
+      background: #06d6a0;
+      color: #0b2b26;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+      transition: 0.1s transform;
+    }
+    .btn-action:active {
+      transform: scale(0.96);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="badge-title">♟️ Min Chess Blitz</div>
+    <div class="scoreboard">
+      <div class="stat-pill timer" id="timeBox">⏱️ 60s</div>
+      <div class="stat-pill score" id="scoreBox">⭐ 0</div>
+    </div>
+  </header>
+
+  <div class="mission-banner" id="missionText">
+    Nhiệm vụ: <span>Tìm nước cờ hay nhất cho bên Trắng!</span>
+  </div>
+
+  <div class="board-container" id="chessBoard"></div>
+
+  <!-- Modal Tổng Kết -->
+  <div class="modal-overlay" id="endModal">
+    <div class="modal-card">
+      <h2>Hết Giờ! 🏆</h2>
+      <p>Tổng điểm Min đạt được: <b id="finalScore" style="color:#ffe66d; font-size:1.3rem;">0</b></p>
+      <div class="rank-tag" id="rankBadge">Kiện Tướng Nhí</div>
+      <button class="btn-action" onclick="restartGame()">Chơi Lại Ván Mới ⚡</button>
+    </div>
+  </div>
+
+  <script>
+    /* ================= Web Audio API ================= */
+    let audioCtx = null;
+    function getAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    function playSound(type) {
+      const ctx = getAudio();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      if (type === 'move') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(320, ctx.currentTime);
+        gain.gain.setValueAtTime(0.5, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.09);
+      } else if (type === 'correct') {
+        const notes = [440, 554.37, 659.25];
+        notes.forEach((f, i) => {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.type = 'sine';
+          o.frequency.setValueAtTime(f, ctx.currentTime + i * 0.08);
+          g.gain.setValueAtTime(0.4, ctx.currentTime + i * 0.08);
+          g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.08 + 0.2);
+          o.connect(g);
+          g.connect(ctx.destination);
+          o.start(ctx.currentTime + i * 0.08);
+          o.stop(ctx.currentTime + i * 0.08 + 0.22);
+        });
+      } else if (type === 'wrong') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(160, ctx.currentTime);
+        gain.gain.setValueAtTime(0.5, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.26);
+      }
+    }
+
+    /* ================= Dữ Liệu Câu Đố (Tactics) ================= */
+    const puzzles = [
+      {
+        hint: "Bên Trắng: Bắt Hậu Đen bằng đòn chĩa đôi!",
+        turn: "Trắng đi",
+        board: {
+          'e4': '♔', 'd5': '♘', 
+          'e8': '♚', 'c7': '♛', 'a8': '♜'
+        },
+        solution: { from: 'd5', to: 'c7' }
+      },
+      {
+        hint: "Bên Trắng: Chiếu bắt Xe Đen!",
+        turn: "Trắng đi",
+        board: {
+          'g1': '♔', 'b3': '♕',
+          'g8': '♚', 'b8': '♜', 'h7': '♟'
+        },
+        solution: { from: 'b3', to: 'b8' }
+      },
+      {
+        hint: "Bên Trắng: Đòn chiếu thắt cổ (Smothered Mate) huyền thoại!",
+        turn: "Trắng đi",
+        board: {
+          'f1': '♔', 'f7': '♘',
+          'h8': '♚', 'g8': '♜', 'h7': '♟', 'g7': '♟'
+        },
+        solution: { from: 'f7', to: 'h6' }
+      },
+      {
+        hint: "Bên Trắng: Chiếu hết hàng ngang cuối (Back Rank Mate)!",
+        turn: "Trắng đi",
+        board: {
+          'h1': '♔', 'd1': '♖', 'f2': '♙', 'g2': '♙', 'h2': '♙',
+          'g8': '♚', 'a8': '♜', 'f7': '♟', 'g7': '♟', 'h7': '♟'
+        },
+        solution: { from: 'd1', to: 'd8' }
+      },
+      {
+        hint: "Bên Trắng: Tấn công đôi Hậu và Vua bằng Xe!",
+        turn: "Trắng đi",
+        board: {
+          'e1': '♔', 'e7': '♖',
+          'd8': '♚', 'b7': '♛'
+        },
+        solution: { from: 'e7', to: 'd7' }
+      }
+    ];
+
+    /* ================= Quản Lý Game ================= */
+    let currentPuzzleIndex = 0;
+    let score = 0;
+    let timeLeft = 60;
+    let timerId = null;
+    let selectedSquare = null;
+    let currentBoard = {};
+
+    const boardEl = document.getElementById('chessBoard');
+    const timeBox = document.getElementById('timeBox');
+    const scoreBox = document.getElementById('scoreBox');
+    const missionText = document.getElementById('missionText');
+    const endModal = document.getElementById('endModal');
+
+    const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
+
+    function createBoardUI() {
+      boardEl.innerHTML = '';
+      ranks.forEach((r, rIdx) => {
+        files.forEach((f, fIdx) => {
+          const sq = document.createElement('div');
+          const isLight = (rIdx + fIdx) % 2 === 0;
+          const pos = `${f}${r}`;
+          sq.className = `square ${isLight ? 'light' : 'dark'}`;
+          sq.dataset.pos = pos;
+          sq.onclick = () => onSquareClick(pos);
+          boardEl.appendChild(sq);
+        });
+      });
+    }
+
+    function loadPuzzle(idx) {
+      selectedSquare = null;
+      document.querySelectorAll('.square').forEach(s => {
+        s.classList.remove('selected', 'hint', 'last-move');
+        s.innerText = '';
+      });
+
+      const p = puzzles[idx % puzzles.length];
+      missionText.innerHTML = `Nhiệm vụ: <span>${p.hint}</span>`;
+      currentBoard = { ...p.board };
+
+      for (const [pos, piece] of Object.entries(currentBoard)) {
+        const cell = document.querySelector(`[data-pos="${pos}"]`);
+        if (cell) cell.innerText = piece;
+      }
+    }
+
+    function onSquareClick(pos) {
+      getAudio();
+      if (timeLeft <= 0) return;
+
+      const p = puzzles[currentPuzzleIndex % puzzles.length];
+      const clickedPiece = currentBoard[pos];
+
+      if (!selectedSquare) {
+        if (clickedPiece && clickedPiece !== '♚' && clickedPiece !== '♛' && clickedPiece !== '♜' && clickedPiece !== '♟') {
+          selectedSquare = pos;
+          document.querySelector(`[data-pos="${pos}"]`).classList.add('selected');
+        }
+      } else {
+        if (selectedSquare === pos) {
+          document.querySelector(`[data-pos="${pos}"]`).classList.remove('selected');
+          selectedSquare = null;
+          return;
+        }
+
+        // Kiểm tra nước đi
+        if (selectedSquare === p.solution.from && pos === p.solution.to) {
+          // Đúng nước cờ
+          playSound('correct');
+          score += 100;
+          timeLeft += 3; // Thưởng thêm 3 giây
+          scoreBox.innerText = `⭐ ${score}`;
+          
+          // Cập nhật vị trí cờ
+          currentBoard[pos] = currentBoard[selectedSquare];
+          delete currentBoard[selectedSquare];
+          renderBoardPieces();
+
+          currentPuzzleIndex++;
+          setTimeout(() => {
+            loadPuzzle(currentPuzzleIndex);
+          }, 350);
+        } else {
+          // Đi sai
+          playSound('wrong');
+          if (navigator.vibrate) navigator.vibrate(80);
+          timeLeft = Math.max(0, timeLeft - 5); // Phạt trừ 5 giây
+          timeBox.innerText = `⏱️ ${timeLeft}s`;
+          document.querySelector(`[data-pos="${selectedSquare}"]`).classList.remove('selected');
+          selectedSquare = null;
+        }
+      }
+    }
+
+    function renderBoardPieces() {
+      document.querySelectorAll('.square').forEach(s => s.innerText = '');
+      for (const [pos, piece] of Object.entries(currentBoard)) {
+        const cell = document.querySelector(`[data-pos="${pos}"]`);
+        if (cell) cell.innerText = piece;
+      }
+    }
+
+    function startTimer() {
+      timerId = setInterval(() => {
+        timeLeft--;
+        timeBox.innerText = `⏱️ ${timeLeft}s`;
+        if (timeLeft <= 0) {
+          clearInterval(timerId);
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function endGame() {
+      document.getElementById('finalScore').innerText = score;
+      const rankBadge = document.getElementById('rankBadge');
+
+      if (score >= 400) {
+        rankBadge.innerText = "👑 Đại Kiện Tướng Nhí (Grandmaster)";
+      } else if (score >= 200) {
+        rankBadge.innerText = "⭐ Kiện Tướng Quốc Tế (IM)";
+      } else {
+        rankBadge.innerText = "♟️ Kiện Tướng Tiềm Năng";
+      }
+      endModal.classList.add('active');
+    }
+
+    function restartGame() {
+      score = 0;
+      timeLeft = 60;
+      currentPuzzleIndex = 0;
+      scoreBox.innerText = `⭐ 0`;
+      timeBox.innerText = `⏱️ 60s`;
+      endModal.classList.remove('active');
+      loadPuzzle(0);
+      startTimer();
+    }
+
+    // Khởi động
+    createBoardUI();
+    loadPuzzle(0);
+    startTimer();
+  </script>
+</body>
+</html>
